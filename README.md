@@ -1,4 +1,3 @@
-.. image:: lux.png
-    :height: 100px
+![logo](lux.png)
 
 # This repo contains coursework and assignments from LuxdevHq
