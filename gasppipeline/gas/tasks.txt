@@ -1,0 +1,7 @@
+1. Get the data from collectapi -- gaspricesapi -- get/stateUsaPrice
+ 
+2. extract city level data, drop the lowername column, rename name to cities store to db
+ 
+3. refactor into functons
+ 
+4. modularze the code
