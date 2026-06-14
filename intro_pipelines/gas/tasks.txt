@@ -2,6 +2,6 @@
  
 2. extract city level data, drop the lowername column, rename name to cities store to db
  
-3. refactor into functons
+3. refactor into functions
  
 4. modularze the code
