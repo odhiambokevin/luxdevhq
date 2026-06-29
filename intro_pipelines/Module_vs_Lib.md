@@ -27,6 +27,7 @@ When python modules are contained in a directory/folder, we call it a python pac
     └── audio/
         ├── __init__.p
         └── sound.py
+
 The `streaming` package has two sub-packages i.e `video` and `audio`. Module imports or function imports can be done directly as below.
 ```bash
 from streaming.video import video #importing a module from package
