@@ -14,7 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir --target=/install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 #runner
 FROM python:3.12-slim AS runner
@@ -24,7 +24,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-COPY --from=builder /install /usr/local
+COPY --from=builder /usr/local /usr/local
 
 COPY extract.py transform.py load.py main.py ./
 
