@@ -9,13 +9,12 @@ consumer = KafkaConsumer(
     bootstrap_servers=BOOTSTRAP_SERVERS,
     auto_offset_reset="earliest",
     enable_auto_commit=True,
-    group_id="weather-debug-001",
+    group_id="weather-debug-002",
     value_deserializer=lambda m: json.loads(m.decode("utf-8")),
-    api_version=(2, 8, 1),
 )
 
 print("Waiting for weather forecasts...\n")
 
 for message in consumer:
     print("Received:")
-    print(json.dumps(message.value, indent=4))
+    print(json.dumps(message.value, indent=4),flush=True)
