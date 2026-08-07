@@ -1,6 +1,5 @@
 from decouple import config
 from sqlalchemy import create_engine,text
-from extract import extract_data
 
 #database connection string variables set from .env file
 DB_HOST = config('DB_HOST',default='localhost')
