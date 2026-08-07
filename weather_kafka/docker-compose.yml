@@ -1,0 +1,50 @@
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0  #supports KRaft
+    container_name: kafka-weather
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+     # node is both broker and controller
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      #broker listens on 9092 -for data. controller mechanism listens on 9093 -the brain of the cluster
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      #voters in the cluster, only 1 here
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      #set to 1 since we only have 1 node so the internal offsets topic have no backup copies
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      JMX_PORT: 9999
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+
+  producer:
+    build:
+      context: .
+    container_name: weather-producer
+    init: true #clean any orphan processes in container
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      python producer.py
+
+  consumer:
+    build:
+      context: .
+    container_name: weather-consumer
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      python consumer.py
