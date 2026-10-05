@@ -9,6 +9,7 @@ __pycache__/
 *.pyd
 .venv/
 venv/
+.env
 env/
 .binance/
 .pytest_cache/

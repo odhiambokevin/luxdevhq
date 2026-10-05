@@ -50,7 +50,6 @@ def get_forecast(city, lat, lon):
         }
     }
 
-
 def main():
     for city, (lat, lon) in CITIES.items():
         weather = get_forecast(city, lat, lon)
