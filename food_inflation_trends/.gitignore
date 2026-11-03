@@ -1,0 +1,5 @@
+.env
+data/
+!data/snapshots/.gitkeep
+!data/processed/.gitkeep
+__pycache__/
