@@ -1,0 +1,232 @@
+{
+  "uid": "food-price-trends",
+  "title": "Food price trends",
+  "description": "Price levels over time by commodity and county, with the KNBS CPI as a national benchmark.",
+  "tags": [
+    "kenya",
+    "food-prices"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "",
+  "time": {
+    "from": "now-5y",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "commodity",
+        "label": "Commodity",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "warehouse"
+        },
+        "query": "SELECT DISTINCT commodity_group FROM dw.dim_commodity WHERE is_food ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": true,
+        "includeAll": false,
+        "current": {
+          "text": "Maize",
+          "value": "Maize"
+        }
+      },
+      {
+        "name": "county",
+        "label": "County",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "warehouse"
+        },
+        "query": "SELECT county_name FROM dw.v_county_coverage WHERE n_markets > 0 ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "price_type",
+        "label": "Price type",
+        "type": "custom",
+        "query": "Retail,Wholesale",
+        "current": {
+          "text": "Retail",
+          "value": "Retail"
+        },
+        "options": [
+          {
+            "text": "Retail",
+            "value": "Retail",
+            "selected": true
+          },
+          {
+            "text": "Wholesale",
+            "value": "Wholesale",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Average price per kg or litre (KES)",
+      "type": "timeseries",
+      "description": "Average of county averages, normalised to KES per kg (solids) or per litre (liquids). Gaps mean no market reported that month.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT month AS time, commodity_group AS metric, round(avg(avg_price_per_base_kes), 2) AS value\nFROM dw.v_price_trend\nWHERE $__timeFilter(month) AND price_type = '${price_type}'\n  AND commodity_group IN (${commodity:singlequote}) AND county_name IN (${county:singlequote})\nGROUP BY 1, 2 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "mean"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "showPoints": "auto",
+            "spanNulls": true
+          },
+          "unit": "currencyKES",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "KNBS CPI inflation: overall vs food (YoY %)",
+      "type": "timeseries",
+      "description": "National benchmark from the KNBS CPI extract (January 2024 onward).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT month AS time, overall_yoy_pct AS \"Overall CPI\", food_yoy_pct AS \"Food and non-alcoholic beverages\"\nFROM dw.v_cpi_monthly\nWHERE $__timeFilter(month) ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "showPoints": "auto",
+            "spanNulls": true
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "Observations per month",
+      "type": "timeseries",
+      "description": "Coverage indicator: the WFP market panel varies a lot from month to month.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 10,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT month AS time, sum(n_obs) AS \"Price observations\"\nFROM dw.v_price_trend\nWHERE $__timeFilter(month) AND price_type = '${price_type}'\nGROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "hidden"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "lineWidth": 1
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      }
+    }
+  ]
+}

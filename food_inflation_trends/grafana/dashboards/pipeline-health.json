@@ -1,0 +1,128 @@
+{
+  "uid": "pipeline-health",
+  "title": "Pipeline health and governance",
+  "description": "Run history, failed validation checks and the source registry.",
+  "tags": [
+    "kenya",
+    "food-prices"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "",
+  "time": {
+    "from": "now-5y",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Pipeline runs",
+      "type": "table",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT data_interval_start AS \"Month\", status AS \"Status\", rows_read AS \"Rows read\", rows_loaded AS \"Loaded\", rows_rejected AS \"Quarantined\",\n       left(source_file_sha256, 12) AS \"Source hash\", updated_at AS \"Updated\"\nFROM meta.pipeline_runs ORDER BY data_interval_start DESC LIMIT 60",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "Validation results that did not pass",
+      "type": "table",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT data_interval_start AS \"Month\", check_name AS \"Check\", severity AS \"Severity\", observed AS \"Observed\", threshold AS \"Threshold\"\nFROM meta.validation_result WHERE NOT passed ORDER BY data_interval_start DESC, severity LIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "Source registry",
+      "type": "table",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT source_name AS \"Source\", publisher AS \"Publisher\", update_frequency AS \"Update frequency\", license AS \"License\", validation_steps AS \"Validation steps\", known_limitations AS \"Known limitations\"\nFROM meta.source_registry",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    }
+  ]
+}

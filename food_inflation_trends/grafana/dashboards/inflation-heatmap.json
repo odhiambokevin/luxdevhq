@@ -1,0 +1,221 @@
+{
+  "uid": "inflation-heatmap",
+  "title": "Food inflation heatmap by county",
+  "description": "Median year-on-year retail price inflation per county, shown as a county by month heatmap.",
+  "tags": [
+    "kenya",
+    "food-prices"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "",
+  "time": {
+    "from": "2015-01-01T00:00:00.000Z",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "commodity",
+        "label": "Commodity",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "warehouse"
+        },
+        "query": "SELECT commodity_group FROM (SELECT 'All staples' AS commodity_group, 0 AS o UNION ALL SELECT DISTINCT commodity_group, 1 FROM dw.dim_commodity WHERE is_food) t ORDER BY o, commodity_group",
+        "refresh": 1,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {
+          "text": "All staples",
+          "value": "All staples"
+        }
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Year-on-year price inflation by county (median %)",
+      "type": "status-history",
+      "description": "Median of market-level year-on-year changes (same market, commodity and unit). Blank cells have no matching observation twelve months earlier. Since 2021 the market panel is thin, so few counties have a matched baseline.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 14
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT month AS time, county_name AS metric, median_yoy_pct AS value\nFROM dw.v_inflation_county_month\nWHERE $__timeFilter(month) AND commodity_group = '${commodity}' AND price_type = 'Retail'\n  AND median_yoy_pct IS NOT NULL\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showValue": "never",
+        "rowHeight": 0.9,
+        "colWidth": 0.9,
+        "legend": {
+          "showLegend": true,
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "Latest month: inflation by county",
+      "type": "bargauge",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 12
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT county_name AS metric, median_yoy_pct AS value\nFROM dw.v_inflation_county_month\nWHERE month = (SELECT max(month) FROM dw.v_inflation_county_month WHERE commodity_group = '${commodity}' AND price_type = 'Retail' AND median_yoy_pct IS NOT NULL) AND commodity_group = '${commodity}' AND price_type = 'Retail'\n  AND median_yoy_pct IS NOT NULL\nORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "County coverage",
+      "type": "table",
+      "description": "Counties with no markets in the source are not shown. Treat inflation for thinly covered counties with care.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 12,
+        "h": 12
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT county_name AS \"County\", province AS \"Province\", n_markets AS \"Markets\", n_observations AS \"Observations\",\n       first_month AS \"First month\", last_month AS \"Last month\"\nFROM dw.v_county_coverage WHERE n_markets > 0 ORDER BY n_markets DESC",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,195 @@
+{
+  "uid": "product-comparison",
+  "title": "Product comparison across regions",
+  "description": "Compare staple prices across the former provinces used as regions.",
+  "tags": [
+    "kenya",
+    "food-prices"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "",
+  "time": {
+    "from": "now-5y",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "commodity",
+        "label": "Commodity",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "warehouse"
+        },
+        "query": "SELECT DISTINCT commodity_group FROM dw.dim_commodity WHERE is_food ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {
+          "text": "Maize",
+          "value": "Maize"
+        }
+      },
+      {
+        "name": "price_type",
+        "label": "Price type",
+        "type": "custom",
+        "query": "Retail,Wholesale",
+        "current": {
+          "text": "Retail",
+          "value": "Retail"
+        },
+        "options": [
+          {
+            "text": "Retail",
+            "value": "Retail",
+            "selected": true
+          },
+          {
+            "text": "Wholesale",
+            "value": "Wholesale",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Average price by province, last 12 months of data",
+      "type": "barchart",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT province AS \"Province\", round(avg(avg_price_per_base_kes), 2) AS \"KES per kg or litre\"\nFROM dw.v_price_trend\nWHERE month >= (SELECT max(month) FROM dw.v_price_trend) - interval '12 months' AND price_type = '${price_type}' AND commodity_group = '${commodity}'\nGROUP BY 1 ORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "showLegend": false
+        },
+        "xField": "Province"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyKES",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "Price trend by province",
+      "type": "timeseries",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT month AS time, province AS metric, round(avg(avg_price_per_base_kes), 2) AS value\nFROM dw.v_price_trend\nWHERE $__timeFilter(month) AND price_type = '${price_type}' AND commodity_group = '${commodity}'\nGROUP BY 1, 2 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "showPoints": "auto",
+            "spanNulls": true
+          },
+          "unit": "currencyKES",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "Staples by province: average KES per kg or litre, last 12 months of data",
+      "type": "table",
+      "description": "Empty cells mean no market in that province reported the commodity in the window. Western province has no markets in the WFP source.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "warehouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 11
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "warehouse"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT commodity_group AS \"Commodity\",\n       round(avg(avg_price_per_base_kes) FILTER (WHERE province = 'Central'), 0) AS \"Central\",\n       round(avg(avg_price_per_base_kes) FILTER (WHERE province = 'Coast'), 0) AS \"Coast\",\n       round(avg(avg_price_per_base_kes) FILTER (WHERE province = 'Eastern'), 0) AS \"Eastern\",\n       round(avg(avg_price_per_base_kes) FILTER (WHERE province = 'Nairobi'), 0) AS \"Nairobi\",\n       round(avg(avg_price_per_base_kes) FILTER (WHERE province = 'North Eastern'), 0) AS \"North Eastern\",\n       round(avg(avg_price_per_base_kes) FILTER (WHERE province = 'Nyanza'), 0) AS \"Nyanza\",\n       round(avg(avg_price_per_base_kes) FILTER (WHERE province = 'Rift Valley'), 0) AS \"Rift Valley\",\n       round(avg(avg_price_per_base_kes) FILTER (WHERE province = 'Western'), 0) AS \"Western\"\nFROM dw.v_price_trend\nWHERE month >= (SELECT max(month) FROM dw.v_price_trend) - interval '12 months' AND price_type = '${price_type}'\n  AND commodity_group IN (SELECT DISTINCT commodity_group FROM dw.dim_commodity WHERE is_staple)\nGROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    }
+  ]
+}
